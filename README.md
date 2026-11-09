@@ -4,7 +4,8 @@
 
 ## 下载与界面
 
-- [下载 1.1.0 测试版 APK](dist/network-toolkit-1.1.0-debug.apk?raw=true)
+- [1.1.0 正式 GitHub Release](https://github.com/vmlive/Network-Toolkit/releases/tag/v1.1.0)
+- [下载 1.1.0 APK（开发测试签名）](https://github.com/vmlive/Network-Toolkit/releases/download/v1.1.0/network-toolkit-1.1.0-debug.apk)
 - [安装包与 SHA-256 校验](dist/)
 - [实际测试记录与未验证范围](docs/VALIDATION.md)
 

@@ -1,5 +1,7 @@
 # Android 安装包
 
+1.1.0 已作为 [正式 GitHub Release](https://github.com/vmlive/Network-Toolkit/releases/tag/v1.1.0) 发布并标记为 Latest，附带 APK、SHA-256 校验及对应标签源码归档。附件沿用验收过的同一开发测试签名 APK；正式 Release 标记不改变其 Android 签名类型。
+
 | 文件 | 版本 | 用途 |
 | --- | --- | --- |
 | [network-toolkit-1.1.0-debug.apk](network-toolkit-1.1.0-debug.apk?raw=true) | 1.1.0 | 按用户提供的 8 张界面图片更新的版本：五入口导航、三列首页、DNS、真实 ICMP/TTL 诊断、局域网发现、下载/上传与分类 HEAD 延迟 |

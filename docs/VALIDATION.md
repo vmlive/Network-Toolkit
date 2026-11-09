@@ -1,5 +1,13 @@
 # 验证记录
 
+## 1.1.0 GitHub 正式发布
+
+- [正式 Release v1.1.0](https://github.com/vmlive/Network-Toolkit/releases/tag/v1.1.0) 已公开为稳定版本，并确认页面显示 Latest。
+- [发布工作流](https://github.com/vmlive/Network-Toolkit/actions/runs/42660464870) 执行成功，发布前校验上传附件的 SHA-256。
+- 独立重新下载发布页 APK 及 `.sha256`，确认 APK 为 207316 字节，SHA-256 为 `cdf3754ec4b13681f0f2a4a5cfc2e2bb094da5f36d4d950edd54f106b14f2939`，与验收版本完全一致。
+- 远端标签 `v1.1.0` 确认指向已验收源代码 `cac33f28201755fda0e9c62c477ad60f6bcf97f1`；源码 ZIP/TAR.GZ 链接及两项发布附件均已确认存在。
+- 稳定 GitHub Release 与 Android 正式签名不同：本次附件保留原开发测试签名和 `debug` 文件名，没有重新构建或更换签名。发布说明见 `releases/v1.1.0.md`。
+
 ## 1.1.0：截图驱动新版
 
 2026-11-09，沿用已校验的 JDK 21、Gradle 8.9、AGP 8.7.3 与 Android SDK 35，运行：
