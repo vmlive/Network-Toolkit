@@ -1,0 +1,4 @@
+<resources>
+    <string name="result_status">%1$s · %2$d ms</string>
+    <string name="run_again">重新开始</string>
+</resources>
