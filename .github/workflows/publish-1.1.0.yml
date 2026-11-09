@@ -1,0 +1,98 @@
+name: Publish 1.1.0 GitHub Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-1.1.0.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-v1.1.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'vmlive/Network-Toolkit'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify approved assets and publish stable release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const crypto = require('crypto');
+            const repo = context.repo;
+            const tag = 'v1.1.0';
+            const approvedCommit = 'cac33f28201755fda0e9c62c477ad60f6bcf97f1';
+            const expectedHash = 'cdf3754ec4b13681f0f2a4a5cfc2e2bb094da5f36d4d950edd54f106b14f2939';
+            const apkName = 'network-toolkit-1.1.0-debug.apk';
+            const apk = fs.readFileSync(`dist/${apkName}`);
+            const checksum = fs.readFileSync(`dist/${apkName}.sha256`);
+            const body = fs.readFileSync('docs/releases/v1.1.0.md', 'utf8');
+            const hash = crypto.createHash('sha256').update(apk).digest('hex');
+            if (hash !== expectedHash || checksum.toString().trim() !== `${expectedHash}  ${apkName}`) {
+              throw new Error('Approved APK or checksum differs; publication stopped.');
+            }
+            // Check the exact source target before the API creates a missing tag.
+            try {
+              await github.rest.git.getRef({...repo, ref: `tags/${tag}`});
+              const commit = await github.rest.repos.getCommit({...repo, ref: tag});
+              if (commit.data.sha !== approvedCommit) throw new Error('Existing tag points to another commit.');
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.git.createRef({...repo, ref: `refs/tags/${tag}`, sha: approvedCommit});
+            }
+            let release;
+            const matching = (await github.paginate(github.rest.repos.listReleases, {
+              ...repo, per_page: 100
+            })).filter(item => item.tag_name === tag);
+            if (matching.length > 1) throw new Error('Multiple matching releases exist; refusing ambiguous publication.');
+            if (matching.length) {
+              release = matching[0];
+              if (!release.draft) throw new Error('Release already published; refusing to replace published assets.');
+            } else {
+              release = (await github.rest.repos.createRelease({
+                ...repo, tag_name: tag, target_commitish: approvedCommit,
+                name: '网络工具箱 1.1.0', body,
+                draft: true, prerelease: false, make_latest: 'false'
+              })).data;
+            }
+            // A failed draft upload can be retried without touching public assets.
+            const previous = await github.paginate(github.rest.repos.listReleaseAssets, {
+              ...repo, release_id: release.id, per_page: 100
+            });
+            const files = [
+              {name: apkName, data: apk, type: 'application/vnd.android.package-archive'},
+              {name: `${apkName}.sha256`, data: checksum, type: 'text/plain; charset=utf-8'}
+            ];
+            for (const file of files) {
+              const old = previous.find(asset => asset.name === file.name);
+              if (old) await github.rest.repos.deleteReleaseAsset({...repo, asset_id: old.id});
+              const uploaded = (await github.rest.repos.uploadReleaseAsset({
+                ...repo, release_id: release.id, name: file.name, data: file.data,
+                headers: {'content-type': file.type, 'content-length': file.data.length}
+              })).data;
+              if (uploaded.size !== file.data.length || uploaded.state !== 'uploaded') {
+                throw new Error(`Incomplete upload for ${file.name}; release stays draft.`);
+              }
+              const download = await github.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', {
+                ...repo, asset_id: uploaded.id, headers: {accept: 'application/octet-stream'}
+              });
+              const downloadedHash = crypto.createHash('sha256').update(Buffer.from(download.data)).digest('hex');
+              const originalHash = crypto.createHash('sha256').update(file.data).digest('hex');
+              if (downloadedHash !== originalHash) throw new Error(`Uploaded checksum mismatch for ${file.name}.`);
+            }
+            const source = await github.rest.repos.getCommit({...repo, ref: tag});
+            if (source.data.sha !== approvedCommit) throw new Error('Release tag did not resolve to the approved source.');
+            release = (await github.rest.repos.updateRelease({
+              ...repo, release_id: release.id, name: '网络工具箱 1.1.0', body,
+              draft: false, prerelease: false, make_latest: 'true'
+            })).data;
+            if (release.draft || release.prerelease) throw new Error('Stable publication was not confirmed.');
+            core.info(`Published ${release.html_url}`);
+            await core.summary.addHeading('1.1.0 published').addLink('Release', release.html_url)
+              .addRaw(`\n\nApproved APK SHA-256: ${hash}\n`).write();
