@@ -13,7 +13,7 @@
 
 - 引导脚本重复执行成功。
 - 单元测试：**29 项通过，0 失败、0 跳过**（NetworkToolsTest 25、CodecToolsTest 4）。
-- Android Lint：通过。
+- Android Lint：通过，`No issues found`。
 - 应用 APK 与设备测试 APK：构建成功。
 - `dist/network-toolkit-1.0.0-debug.apk`：通过 Android apksigner 签名校验，开发测试签名。
 - SHA-256：见 `dist/SHA256SUMS`，在 `dist` 目录运行 `sha256sum -c SHA256SUMS`。
@@ -22,9 +22,13 @@
 
 ## 设备验证
 
-设备测试共 8 项，覆盖界面导航、搜索、Base64 结果与历史、子网与收藏、错误状态、本机接口信息、Android localhost HTTP/TCP 与中途取消。
+**AOSP Android 11（API 30）模拟器：8 项全部通过，0 失败、0 错误，耗时 79.66 秒。**
 
-初次 API 30 Google APIs 模拟器在无 KVM 的软件 CPU 环境中发生系统框架重启；当时尚未完成测试，不计为通过。正在尝试精简 AOSP 镜像。最终结果将在本文件更新；构建成功不代表设备测试通过。
+包含 3 项真实 Android 本地 HTTP、TCP 握手和中途取消测试，以及 5 项界面测试：导航、搜索、Base64 结果与历史、子网边界与收藏、错误状态、本机网络信息。记录见 `test-results/android-instrumentation.txt`。
+
+首次取消用例的服务端夹具仅接受 EOF，Android 正常以 TCP RST 关闭连接时被误判为错误。夹具已修正为接受取消后的 EOF / TCP 重置，保留 3 秒取消时限、取消标记与连接确实关闭的验证，随后完整重跑 8 项通过。
+
+无 KVM 的软件模拟器首次启动较慢，Google APIs 镜像出现系统框架重启，改用精简 AOSP 镜像后完成上述测试。软件模拟器仍可能显示系统进程无响应提示，不代表已验证所有真机性能。Android 8.0 仅支持浅色导航键，已为该版本保留深色导航栏背景。
 
 ## 尚未验证的范围
 
@@ -32,5 +36,5 @@
 - `api.ipify.org` 为 IPv4 查询服务，纯 IPv6 网络可能不可达。
 - 默认测速消耗约 5 MB，单次读取最多 10 MiB / 20 秒，包含连接开销，不代表峰值带宽。
 - 参考应用页面被网络策略拦截，截图待用户提供，未验证完整功能或 UI 一致性。见 `REFERENCE.md`。
-- GitHub Actions 工作流已提供；其远端运行结果未在本地构建中得到验证。
+- GitHub Actions 已在远端实际通过 SDK 准备、29 项单元测试、Lint、APK 构建与产物上传：[运行 #2](https://github.com/vmlive/Network-Toolkit/actions/runs/42635588494)。首次失败位于第三方 SDK 安装动作，已替换为本仓库验证过的安装脚本；此后本地最终源码也完整重跑检查通过。后续运行可在仓库 Actions 页面查看。
 - 云环境草稿读取与保存接口返回 `INVALID_ARGUMENT`，平台配置持久化未获确认。可复用的引导和构建脚本已保存在仓库，当前机器安装及构建已验证；尚未验证环境发布或新任务恢复。

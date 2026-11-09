@@ -65,7 +65,14 @@ public final class AndroidNetworkTest extends InstrumentationTestCase {
                     socket.getOutputStream().flush();
                     request.countDown();
                     // Withhold body until cancellation closes the client's end of this socket.
-                    socket.getInputStream().read();
+                    try {
+                        int end = socket.getInputStream().read();
+                        if (end != -1) throw new java.io.IOException("Expected the cancelled client to close the connection");
+                    } catch (java.net.SocketException reset) {
+                        // Android may abort with TCP RST rather than a graceful EOF.
+                        // Both prove closure; a timeout or reset before cancellation still fails.
+                        if (!cancel.isCancelled()) throw reset;
+                    }
                 } catch (Exception e) { throw new RuntimeException(e); }
             });
             Future<Boolean> call = workers.submit(() -> {

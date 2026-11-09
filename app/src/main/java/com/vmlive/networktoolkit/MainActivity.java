@@ -90,7 +90,8 @@ public final class MainActivity extends Activity {
     }
     private void buildShell() {
         palette();
-        getWindow().setNavigationBarColor(card);
+        // Android 8.0 has only light navigation icons; keep their background dark.
+        getWindow().setNavigationBarColor(Build.VERSION.SDK_INT >= 27 ? card : color("#152A32"));
         getWindow().setStatusBarColor(bg);
         int lightFlags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         if (Build.VERSION.SDK_INT >= 27) lightFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;

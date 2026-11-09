@@ -2,6 +2,14 @@
 
 一个无需账号、无广告的原生 Android 网络工具应用。中文界面，支持深色模式、工具搜索与分类、收藏、最近 50 条本机历史、结果复制与系统分享。
 
+## 实际界面
+
+以下为 AOSP Android 11 模拟器实际运行截图，不是参考应用截图或设计稿。
+
+<img src="docs/screenshots/home.png" width="230" alt="浅色首页"> <img src="docs/screenshots/home-dark.png" width="230" alt="深色首页">
+
+<img src="docs/screenshots/tools.png" width="230" alt="全部工具"> <img src="docs/screenshots/subnet.png" width="230" alt="子网计算结果">
+
 ## 下载与安装
 
 仓库的 [`dist/`](dist/) 保存可安装 APK 及 SHA-256 校验文件。当前 APK 为开发测试签名版本，支持 **Android 8.0（API 26）及以上**。下载安装时需允许相应来源安装应用。它不是应用商店正式签名发行版；后续正式发行应使用开发者妥善保管的签名密钥。
