@@ -1,0 +1,8 @@
+com.vmlive.networktoolkit.LanDiscoveryTest: 7 passed, 0 failures, 0 errors, 0 skipped
+com.vmlive.networktoolkit.MeasurementsTest: 12 passed, 0 failures, 0 errors, 0 skipped
+com.vmlive.networktoolkit.core.AddressToolsTest: 8 passed, 0 failures, 0 errors, 0 skipped
+com.vmlive.networktoolkit.core.AdvancedDiagnosticsTest: 9 passed, 0 failures, 0 errors, 0 skipped
+com.vmlive.networktoolkit.core.CodecToolsTest: 4 passed, 0 failures, 0 errors, 0 skipped
+com.vmlive.networktoolkit.core.DnsClientTest: 14 passed, 0 failures, 0 errors, 0 skipped
+com.vmlive.networktoolkit.core.NetworkToolsTest: 25 passed, 0 failures, 0 errors, 0 skipped
+TOTAL: 79 passed

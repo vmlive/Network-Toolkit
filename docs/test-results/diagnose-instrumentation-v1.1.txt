@@ -1,0 +1,5 @@
+com.vmlive.networktoolkit.AppSmokeTest:.
+Test results for InstrumentationTestRunner=.
+Time: 15.014
+
+OK (1 test)

@@ -1,4 +1,7 @@
 <resources>
     <string name="result_status">%1$s · %2$d ms</string>
     <string name="run_again">重新开始</string>
+    <string name="traffic_estimate">↓ 下载 ~%1$d MB     ↑ 上传 ~1 MB\nΣ 总计 ~%2$d MB + 协议开销</string>
+    <string name="default_ip">192.168.1.1</string>
+    <string name="command_prompt">$ %1$s %2$s%3$s</string>
 </resources>

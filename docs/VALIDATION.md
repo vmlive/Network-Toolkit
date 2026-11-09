@@ -1,6 +1,34 @@
 # 验证记录
 
-## 当前构建
+## 1.1.0：截图驱动新版
+
+2026-11-09，沿用已校验的 JDK 21、Gradle 8.9、AGP 8.7.3 与 Android SDK 35，运行：
+
+```bash
+./scripts/cloud-gradle.sh testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
+```
+
+- **79 项 JVM 测试通过，0 失败、0 错误、0 跳过。** 见 `test-results/unit-summary-v1.1.txt`。
+- Android Lint：**No issues found**。
+- 应用与设备测试 APK 构建成功；`dist/network-toolkit-1.1.0-debug.apk` 通过 apksigner 签名校验。
+- 1.1.0 与仓库保留的 1.0.0 使用同一开发测试签名，versionCode 从 1 增至 2；正式发行仍应改用长期管理的 release 签名。
+- **AOSP Android 11（API 30）实际执行 20 项设备测试全部通过**，0 失败、0 错误，耗时 106.724 秒。见 `test-results/android-instrumentation-v1.1.txt`。
+- 随后针对一键诊断的空目标禁用、输入后启用及真实回环 DNS/ICMP/TCP/TTL 五阶段，再运行新增专项用例 **1 项通过**（15.014 秒）。合计 **21 个不同的设备用例通过**，完整 20 项回归与该专项为分次执行，见 `test-results/diagnose-instrumentation-v1.1.txt`。
+
+JVM 用例包含真实 localhost DNS UDP 报文、HTTP HEAD、定量下载与上传、端口与 UDP 收发；还验证 DNS 压缩/TTL/损坏报文、取消、有界并发、IP/MAC、CIDR 与编码。设备用例包含应用 UID 下的真实 ICMP 回环、TTL 路由回环、进程取消、DNS UDP 报文、Android HTTP/TCP/取消、本机 IPv4 的 /32 扫描、Bonjour/SSDP 预取消，以及 10 项界面交互。界面覆盖五分区导航、编码/历史、子网/收藏、错误提示、本机信息、DNS 类型和自定义服务器绑定、测速确认取消、扫描初始状态、MAC 实算和主题持久化。
+
+首次界面运行有 1 项测试未正确点击原生 ListView 的 TXT 行；修正为行 ACTION_CLICK 或实际坐标触摸后，保留类型选择与后续查询断言，完整重跑 20 项通过，没有跳过该用例。
+
+本版界面对照的是用户提供的 **8 张图片**。手机、平板、深色和浅色均由同一原生 Android 实现适配；本项目实际运行截图位于 `screenshots/v1.1-*.png`。未收到可读取的视频附件，未核对原应用隐藏页面或动画时序，详见 `REFERENCE.md`。
+
+### 1.1.0 尚未实测的范围
+
+- 真机 Wi-Fi/蜂窝/VPN、外网 Cloudflare 吞吐率、公网 IP、公共 DNS UDP 53、26 个真实外网站点的可达性，以及实际局域网对端的 Bonjour/SSDP 发现，尚未作端到端实测。单元测试使用真实本地传输夹具，设备测试不会自动向外网批量发包或启动收费流量测试。
+- Android 8.0、Android 15 真机与不同厂商的 ICMP/多播/MAC 限制仍需真机覆盖；模拟器通过不保证所有网络均允许这些协议。
+- 网络默认 A/AAAA 遵循系统解析器；自选 DNS 和高级类型的直接 UDP 查询不继承私密 DNS/DoT。系统未提供的 TTL、MAC、地理位置或厂商保持未知。
+- 新版 GitHub Actions 的远端结果以仓库 Actions 页面为准；下方 1.0.0 中的历史成功记录不替代本版远端运行状态。
+
+## 1.0.0 历史构建记录
 
 2026-11-09，Linux x86_64 云环境：Eclipse Temurin 21.0.13+9、Gradle 8.9、Android Gradle Plugin 8.7.3、Android SDK Platform 35。SDK、JDK 和 Gradle 均从官方源获取并校验分发包；保持 TLS 验证。
 
