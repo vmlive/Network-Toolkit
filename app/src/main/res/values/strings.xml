@@ -4,4 +4,5 @@
     <string name="traffic_estimate">↓ 下载 ~%1$d MB     ↑ 上传 ~1 MB\nΣ 总计 ~%2$d MB + 协议开销</string>
     <string name="default_ip">192.168.1.1</string>
     <string name="command_prompt">$ %1$s %2$s%3$s</string>
+    <string name="web_http_status">原站返回 HTTP %1$d</string>
 </resources>

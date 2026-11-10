@@ -13,6 +13,9 @@ final class Tool {
         this.icon = icon; this.placeholder = placeholder; this.initial = initial; this.help = help;
     }
     static final List<Tool> ALL = Collections.unmodifiableList(Arrays.asList(
+        new Tool("ip_diagnostics", "公网 IP 诊断", "多来源 IPv4 / IPv6 与网络画像", "IP 与网络画像", 2, "无需输入", "", "主动向所列第三方查询出口 IP、IPv6 可达性和服务实际提供的归属信息。不同出口、分流及数据库可能导致差异；不凭差异推断 VPN 或风险分数。"),
+        new Tool("skk_site", "IP.SKK.MOE", "应用内完整 IP 与连通性检测网站", "IP 与网络画像", 2, "无需输入", "", "在应用内连接 ip.skk.moe 原始 HTTPS 网站，保留其当前功能。网站会看到出口 IP，并可能连接自己的检测服务；由网站自行提供结果。"),
+        new Tool("ping0_site", "Ping0.cc", "应用内完整 IP 画像与检测网站", "IP 与网络画像", 13, "无需输入", "", "在应用内连接 ping0.cc 原始 HTTPS 网站。风险、原生 IP 等专有信息由原站提供，可能有其自己的服务条件；应用不编造评分或绕过登录。"),
         new Tool("diagnose", "一键诊断", "DNS · Ping · TCP · 路由追踪", "网络层工具", 10, "输入域名或 IP 地址", "", "依次执行 DNS 查询、ICMP Ping、TCP 80/443 和路由追踪。系统或路由器不响应 ICMP 时如实显示未响应，不使用模拟结果。"),
         new Tool("ping", "Ping", "ICMP 连通性与丢包", "网络层工具", 2, "输入域名或 IP 地址", "www.qq.com", "使用 Android 系统 ping 发送 ICMP。部分设备或网络限制 ICMP，将显示错误或超时；不把 TCP 延迟当作 Ping。"),
         new Tool("trace", "Traceroute", "逐跳路由追踪", "网络层工具", 11, "输入域名或 IP 地址", "www.qq.com", "使用逐级 TTL 的 ICMP 探测，最多 16 跳、总时限 120 秒。未返回 TTL 超时消息的节点显示 *，不推测路由或归属地。"),

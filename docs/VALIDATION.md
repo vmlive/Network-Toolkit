@@ -1,5 +1,25 @@
 # 验证记录
 
+## 1.2.0：原生 IP、应用内网站与新图标
+
+本版为新增功能预览，versionName `1.2.0`、versionCode `3`、minSdk `26`、targetSdk `35`。没有替换 1.1.0 正式 Release 的标签或附件。
+
+- 执行 `./scripts/cloud-gradle.sh clean testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest`，随后对空资源目录清理运行 `lintDebug`。
+- **99 项 JVM 测试通过，0 失败、0 错误、0 跳过**，见 `test-results/unit-summary-v1.2.txt`；Android Lint 为 **No issues found**。
+- 新增 IP 解析测试使用真实 localhost HTTP 夹具，覆盖 IPv4/IPv6、IP.SB JSON、Cloudflare Trace、Ping0 四行文本、错误/跳转/HTML、64 KiB 上限、并发及中途取消。生产路径保留 HTTPS 验证；仅包内测试入口允许数字回环 HTTP。
+- AOSP Android 11（API 30）完整批次执行 **28 项**：首次 26 项通过，2 项原有弹窗 UI 用例被系统的 `Process system` / `System UI` 无响应对话框阻挡。记录见 `test-results/android-instrumentation-v1.2-initial.txt`。
+- 只恢复模拟器系统界面，对系统进程选择 Wait、对 SystemUI 选择 Close app；未修改应用断言或关闭 ANR 报告。前台焦点恢复后，**DNS 类型和测速确认两个用例均复测通过**，耗时 27.405 秒，见 `test-results/android-instrumentation-v1.2-retest.txt`。因此本版 **28 个不同设备用例均有通过结果，分批执行**，没有把首次失败算作通过。
+- 新增设备用例实际执行 Chromium JavaScript、DOM、本地存储与第一方 Cookie，验证没有原生 JS 桥及文件/混合内容权限；还执行 Android 原生 HTTP/JSON、取消连接、网站 Activity 路由和 Android 自适应启动图标加载/渲染。网站入口路由测试拦截实际导航，不会自动对真实网站发起请求。
+- 当前模拟器的真实 WebView 提供程序为 `com.android.webview 83.0.4103.120`，relro 初始化完成。网页能力测试使用无外部资源的内联测试文档，不能据此声称两个实时站点已经完成端到端验证。
+
+### 本版现场验证边界
+
+- 运行环境的网络策略仍为 restricted，所需新增域名未允许。`ip.skk.moe`、`ping0.cc`、App Store 页面均返回策略拒绝；未通过代理、关闭 TLS 或 CI 抓取绕过该限制。
+- 原生服务的当前公网可用性、两站的真实页面/登录/验证码/收费能力、系统 WebView 版本兼容性，仍需允许网络后或在实际手机上验证。网站菜单提供系统浏览器入口；缺少或失效的 WebView 会显示原生提示和重试入口。
+- Ping0 原生适配仅解析公开资料描述的四行当前出口响应，不包含付费风险/原生 IP/机房字段；Cloudflare WARP 状态不被扩展成通用 VPN 结论，多来源 IP 差异也不被当作泄漏证明。
+- UISP 原图尚未读取到，新图标是已展示的原创蓝白网络 N 暂定方向，不声称已与 UISP 最新图标精确对齐。实际 Android 遮罩见 `screenshots/v1.2-launcher.png`。
+- 本版 APK 沿用同一开发测试签名，支持覆盖升级；正式渠道签名与此前正式 GitHub Release 的区别仍适用。安装包校验文件随 APK 保存在 `dist`。
+
 ## 1.1.0 GitHub 正式发布
 
 - [正式 Release v1.1.0](https://github.com/vmlive/Network-Toolkit/releases/tag/v1.1.0) 已公开为稳定版本，并确认页面显示 Latest。

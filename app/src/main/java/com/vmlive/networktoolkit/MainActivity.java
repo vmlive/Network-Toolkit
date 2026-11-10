@@ -24,6 +24,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
@@ -69,6 +70,7 @@ public final class MainActivity extends Activity {
     private TextView scanFound, scanCount, scanPercent;
     private final Map<String, TextView> siteLabels = new HashMap<>();
     private final Map<String, TextView> speedLabels = new HashMap<>();
+    private final Map<String, TextView> ipStatuses = new HashMap<>();
     private Gauge gauge;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private NetworkTools.Cancellation cancellation;
@@ -154,7 +156,7 @@ public final class MainActivity extends Activity {
     }
     private void resetViews() {
         input = null; customDns = null; output = null; state = null; runButton = null; prompt = null;
-        dnsDeck = null; deviceDeck = null; resultPanel = null; gauge = null; siteLabels.clear(); speedLabels.clear();
+        dnsDeck = null; deviceDeck = null; resultPanel = null; gauge = null; siteLabels.clear(); speedLabels.clear(); ipStatuses.clear();
     }
     private void renderTab() {
         detailId = null; resetViews(); content.removeAllViews(); drawNav();
@@ -171,8 +173,9 @@ public final class MainActivity extends Activity {
     private void section(LinearLayout body, String title) { add(body, text(title, 14, muted, false), 24); }
     private void home() {
         LinearLayout body = page(); LinearLayout brand = row(); brand.setGravity(Gravity.CENTER_VERTICAL);
-        FrameLayout logo = new FrameLayout(this); logo.setBackground(gradient(22)); FrameLayout.LayoutParams iconLp = new FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER);
-        logo.addView(new Symbol(10, Color.WHITE), iconLp); brand.addView(logo, new LinearLayout.LayoutParams(dp(28), dp(28)));
+        FrameLayout logo = new FrameLayout(this); logo.setBackground(round(color("#0069FF"), 8)); logo.setClipToOutline(true);
+        ImageView brandIcon = new ImageView(this); brandIcon.setImageResource(R.drawable.network_toolkit_icon); brandIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        logo.addView(brandIcon, new FrameLayout.LayoutParams(-1, -1)); brand.addView(logo, new LinearLayout.LayoutParams(dp(28), dp(28)));
         TextView name = text("网络工具箱", 15, color("#B29BFF"), true); LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(0, -2, 1); nameLp.leftMargin = dp(9); brand.addView(name, nameLp);
         TextView language = text("◎ 中", 12, color("#B29BFF"), false); language.setPadding(dp(12), dp(7), dp(12), dp(7)); language.setBackground(round(dark ? color("#261D35") : color("#F0E9FA"), 18));
         language.setOnClickListener(v -> toast("当前版本使用简体中文")); brand.addView(language); body.addView(brand);
@@ -184,6 +187,7 @@ public final class MainActivity extends Activity {
         section(body, "网络层工具"); toolGrid(body, Arrays.asList("ping", "trace", "dns", "tcp", "udp", "lan"));
         section(body, "应用层工具"); toolGrid(body, Arrays.asList("http", "connection", "sites"));
         section(body, "系统工具"); toolGrid(body, Collections.singletonList("network"));
+        section(body, "IP 与网络画像"); toolGrid(body, Arrays.asList("ip_diagnostics", "skk_site", "ping0_site"));
     }
     private void toolGrid(LinearLayout body, List<String> ids) {
         for (int i = 0; i < ids.size(); i += 3) {
@@ -206,6 +210,8 @@ public final class MainActivity extends Activity {
         switch (id) { case "trace": return purple; case "tcp": return color("#E8912F"); case "udp": return green; case "lan": return color("#7772ED"); case "dns": return cyan; case "http": return cyan; case "connection": return color("#05C8AF"); case "sites": return green; case "network": return color("#807CF7"); default: return blue; }
     }
     private void showTool(Tool tool, String priorInput, String priorResult) {
+        if (tool.id.equals("skk_site") || tool.id.equals("ping0_site")) { openWebsite(tool.id.equals("skk_site") ? "skk" : "ping0"); return; }
+        if (tool.id.equals("ip_diagnostics")) { cancelTask(); tab = 3; renderTab(); restoreResult(priorResult); return; }
         cancelTask(); detailId = tool.id; lastResult = priorResult == null ? "" : priorResult; resetViews(); drawNav(); content.removeAllViews();
         if (tool.id.equals("sites")) { sitesPage(); return; }
         if (tool.id.equals("speed")) { tab = 1; renderTab(); restoreResult(priorResult); return; }
@@ -423,7 +429,7 @@ public final class MainActivity extends Activity {
     private void cancelTask() { generation++; busy = false; if (cancellation != null) cancellation.cancel(); if (future != null) future.cancel(true); future = null; cancellation = null; }
     private void updateDiagnosticButton() { if (runButton != null && "diagnose".equals(detailId)) { boolean ready = busy || input != null && !input.getText().toString().trim().isEmpty(); runButton.setEnabled(ready); runButton.setAlpha(ready ? 1f : .45f); } }
     private void setIdleButton(String label) { if (runButton != null) { runButton.setText(runButton.getLayoutParams().width == dp(44) ? "dns".equals(detailId) ? "⌕" : "▶" : label); updateDiagnosticButton(); } }
-    private void cancelDisplayed() { cancelTask(); if (state != null) state.setText("已停止"); setIdleButton(getString(R.string.run_again)); }
+    private void cancelDisplayed() { cancelTask(); if (state != null) state.setText("已停止"); for (TextView status : ipStatuses.values()) if (status.getText().toString().equals("等待响应…")) status.setText("已停止，未获得结果"); setIdleButton(getString(R.string.run_again)); }
     private void showError(Exception e) { new AlertDialog.Builder(this).setTitle("参数有误").setMessage(e.getMessage()).setPositiveButton("知道了", null).show(); }
     private void speedPage() {
         LinearLayout body = page(); pageHeading(body, "网速测试");
@@ -553,21 +559,54 @@ public final class MainActivity extends Activity {
         row.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle(name.isEmpty() ? ip : name).setMessage(ip + "\n" + (mac.isEmpty() ? "系统未提供 MAC 地址" : mac)).setNegativeButton("关闭", null).setNeutralButton("Ping", (d, w) -> showTool(Tool.find("ping"), ip, "")).setPositiveButton("TCP", (d, w) -> showTool(Tool.find("tcp"), ip + ":80", "")).show()); deviceDeck.addView(row);
     }
     private void addressPage() {
-        LinearLayout body = page(); pageHeading(body, "IP / MAC 查询"); addCentered(body, text("⌕", 54, blue, true), 24); addCentered(body, text("地址信息，一目了然", 17, ink, true), 12);
+        LinearLayout body = page(); pageHeading(body, "IP / MAC 查询");
+        LinearLayout webTools = panel(); webTools.addView(text("IP 网站工具", 17, ink, true));
+        add(webTools, text("在应用内打开完整网站，使用原站实时功能、查询和结果。", 12, muted, false), 10);
+        TextView skk = button("IP.SKK.MOE · 完整网站   ↗", blue); skk.setOnClickListener(v -> openWebsite("skk")); add(webTools, skk, 14);
+        TextView ping0 = button("PING0 · IP 画像与检测   ↗", purple); ping0.setOnClickListener(v -> openWebsite("ping0")); add(webTools, ping0, 10);
+        add(webTools, text("网页由第三方提供，会看到你的出口 IP，并可能连接其他检测服务。网页数据可在其工具栏清除。", 11, muted, false), 12); add(body, webTools, 18);
+        LinearLayout nativeProfile = panel(); nativeProfile.addView(text("原生公网 IP 诊断", 17, ink, true));
+        add(nativeProfile, text("比较 IPv4 / IPv6 和不同来源的出口信息。ASN、归属地及 WARP 字段仅显示服务实际返回值，不估算风险分数，也不把 WARP 状态当作通用 VPN 检测。", 12, muted, false), 12);
+        TextView nativeRun = button("开始原生 IP 诊断", blue); add(nativeProfile, nativeRun, 16);
+        add(nativeProfile, text("点击后访问下列 5 个服务；失败各自显示，不会阻塞其他来源。", 11, muted, false), 10); add(body, nativeProfile, 18);
+        for (IpDiagnostics.Provider provider : IpDiagnostics.PROVIDERS) {
+            LinearLayout report = panel(); report.addView(text(provider.name, 15, ink, true)); add(report, text(provider.url, 10, muted, false), 6);
+            TextView status = text("尚未查询", 12, muted, false); status.setTextIsSelectable(true); add(report, status, 12); ipStatuses.put(provider.id, status); add(body, report, 10);
+        }
+        nativeRun.setOnClickListener(v -> {
+            if (busy) { cancelDisplayed(); return; }
+            runButton = nativeRun; for (TextView status : ipStatuses.values()) { status.setText("等待响应…"); status.setTextColor(muted); }
+            runOperation("ip_diagnostics", "多来源当前出口查询", (c, p) -> {
+                List<IpDiagnostics.Result> reports = IpDiagnostics.run(c, result -> runOnUiThread(() -> {
+                    if (c.isCancelled()) return; TextView status = ipStatuses.get(result.id); if (status == null) return;
+                    StringBuilder data = new StringBuilder();
+                    if (result.success) for (Map.Entry<String, String> field : result.fields.entrySet()) data.append(field.getKey()).append("：").append(field.getValue()).append('\n');
+                    else data.append("查询失败：").append(result.error).append("\n可使用完整网站或稍后重试。\n");
+                    data.append("耗时：").append(result.elapsedMs).append(" ms"); status.setText(data.toString()); status.setTextColor(result.success ? ink : color("#DD826F"));
+                }));
+                StringBuilder summary = new StringBuilder("公网 IP 多来源诊断\n\n"); for (IpDiagnostics.Result report : reports) summary.append(report.format()).append("\n\n");
+                return summary.append("来源差异可能来自路由、双栈或数据库差异，不能据此直接推断 VPN、泄漏或风险值。").toString();
+            });
+        });
+        section(body, "本地地址与 MAC 查询");
         input = edit("输入 IP、域名或 MAC 地址"); input.setText(R.string.default_ip); add(body, input, 24);
-        runButton = button("⌕ 查询", blue); add(body, runButton, 14); runButton.setOnClickListener(v -> { if (busy) cancelDisplayed(); else { String value = input.getText().toString(); runOperation("lookup", value, (c, p) -> AddressTools.inspect(value, c)); } });
+        TextView localRun = button("⌕ 查询", blue); runButton = localRun; add(body, localRun, 14); localRun.setOnClickListener(v -> { if (busy) cancelDisplayed(); else { runButton = localRun; String value = input.getText().toString(); runOperation("lookup", value, (c, p) -> AddressTools.inspect(value, c)); } });
         TextView publicIp = smallAction("查询当前公网 IPv4", blue); add(body, publicIp, 12); publicIp.setOnClickListener(v -> runOperation("public_ip", "api.ipify.org", (c, p) -> DeviceTools.publicIp(c)));
-        add(body, text("IP 显示实际解析、地址分类与可用的反向 DNS；MAC 显示格式、OUI 前缀和地址标志。不推测运营商、地理位置或厂商。", 12, muted, false), 14); terminal(body, Tool.find("lookup"), "");
+        add(body, text("本地查询显示地址分类、可用反向 DNS、MAC 格式与标志；地理和 ASN 信息请参考上方第三方诊断，不推测厂商。", 12, muted, false), 14); terminal(body, Tool.find("lookup"), "");
         TextView subnet = button("子网计算   →", purple); subnet.setOnClickListener(v -> showTool(Tool.find("subnet"), null, "")); add(body, subnet, 20);
     }
+    private void openWebsite(String siteId) {
+        if (busy) cancelDisplayed();
+        startActivity(new Intent(this, WebToolsActivity.class).putExtra("site", siteId).putExtra("open", true));
+    }
     private void mine() {
-        LinearLayout body = page(); pageHeading(body, "我的"); addCentered(body, text("网络工具箱", 25, ink, true), 24); addCentered(body, text("1.1.0 · 原生 Android · 无广告", 12, muted, false), 10);
+        LinearLayout body = page(); pageHeading(body, "我的"); addCentered(body, text("网络工具箱", 25, ink, true), 24); addCentered(body, text("1.2.0 · Android · 无内置广告 SDK", 12, muted, false), 10);
         LinearLayout list = panel(); menu(list, "全部工具", "搜索全部工具与离线实用工具", () -> allTools(false)); menu(list, "我的收藏", favorites().size() + " 个工具", () -> allTools(true)); menu(list, "检测历史", "最近 50 条，仅保存在本机", () -> history()); menu(list, "测速设置", "服务器与下载样本", () -> speedSettings()); add(body, list, 24);
         LinearLayout appearance = panel(); appearance.addView(text("外观与记录", 15, ink, true)); Switch theme = new Switch(this); theme.setText("深色模式"); theme.setTextColor(ink); theme.setChecked(dark); theme.setPadding(0, dp(16), 0, dp(16)); appearance.addView(theme);
         theme.setOnCheckedChangeListener((v, checked) -> { dark = checked; prefs.edit().putBoolean("dark", checked).apply(); buildShell(); renderTab(); });
         Switch save = new Switch(this); save.setText("保存检测历史"); save.setTextColor(ink); save.setChecked(prefs.getBoolean("save_history", true)); save.setPadding(0, dp(12), 0, dp(12)); appearance.addView(save); save.setOnCheckedChangeListener((v, checked) -> prefs.edit().putBoolean("save_history", checked).apply());
         TextView clear = smallAction("清空历史记录", color("#EC6869")); clear.setOnClickListener(v -> clearHistory()); add(appearance, clear, 12); add(body, appearance, 18);
-        LinearLayout privacy = panel(); privacy.addView(text("隐私与权限", 15, ink, true)); add(privacy, text("无需注册，无分析 SDK。收藏与历史仅存本机，可能包含网址、目标和输入文本；可关闭记录并清空。\n\n测速默认连接 Cloudflare，公网 IPv4 使用 api.ipify.org。站点延迟仅在你启动后访问所列站点；其他工具连接输入目标或在本地计算。局域网服务发现使用多播权限，不请求位置或存储权限。\n\nHTTPS 保持系统验证；HTTP 诊断支持明文请求。路由、ICMP、多播、MAC 读取可能受 Android 和网络限制，结果将如实显示。", 12, muted, false), 14); add(body, privacy, 18);
+        LinearLayout privacy = panel(); privacy.addView(text("隐私与权限", 15, ink, true)); add(privacy, text("应用无需注册，无分析 SDK。收藏与历史仅存本机，可能包含 IP、网址、目标和输入文本；可关闭并清空。\n\n原生 IP 诊断仅在启动后访问 ipify、IP.SB、Cloudflare 和 Ping0。完整网站由第三方提供，可能有其自己的登录、收费、广告和检测服务；浏览 Cookie 与本地存储保存在应用私有 WebView 中，可在网页工具栏清除。应用不会读取网站账户或伪造风险结果。\n\n测速默认连接 Cloudflare；其他原生工具连接输入目标或在本机计算。局域网服务发现使用多播权限，不请求位置、相机、麦克风或存储权限。\n\nHTTPS 保持系统验证；原生 HTTP 诊断支持明文请求。网站页面禁止混合明文内容。", 12, muted, false), 14); add(body, privacy, 18);
         TextView github = smallAction("GitHub 源代码  ↗", blue); github.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/vmlive/Network-Toolkit")))); add(body, github, 18);
     }
     private void menu(LinearLayout parent, String title, String subtitle, Runnable action) {

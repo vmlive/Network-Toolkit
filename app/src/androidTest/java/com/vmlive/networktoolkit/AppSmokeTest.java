@@ -100,6 +100,21 @@ public final class AppSmokeTest extends ActivityInstrumentationTestCase2<MainAct
         assertText("本地管理位"); assertText("未内置厂商数据库");
     }
 
+    public void testIpSourcesStartIdleAndBothWebsiteEntriesLaunch() {
+        click("IP/MAC"); assertText("原生公网 IP 诊断");
+        assertText("ipify · IPv4"); assertText("ipify · IPv6"); assertText("Cloudflare Trace"); assertText("IP.SB"); assertText("尚未查询");
+        // Intercept the actual Activity launch so the UI regression never queries live sites.
+        android.app.Instrumentation.ActivityMonitor monitor = getInstrumentation().addMonitor(
+                WebToolsActivity.class.getName(), new android.app.Instrumentation.ActivityResult(android.app.Activity.RESULT_CANCELED, null), true);
+        try {
+            click("IP.SKK.MOE · 完整网站   ↗");
+            assertEquals("SKK entry must launch the embedded website Activity", 1, monitor.getHits());
+            click("PING0 · IP 画像与检测   ↗");
+            assertEquals("Ping0 entry must launch the embedded website Activity", 2, monitor.getHits());
+        } finally { getInstrumentation().removeMonitor(monitor); }
+        click("我的"); click("检测历史"); assertText("还没有检测记录");
+    }
+
     public void testThemePersistsAcrossNavigation() {
         click("我的");
         getInstrumentation().runOnMainSync(() -> {
